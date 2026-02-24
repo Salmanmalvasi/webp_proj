@@ -259,13 +259,13 @@ h3 { font-size: clamp(1.25rem, 3vw, 1.75rem); }
 .hero--model-y { 
   background-color: #c7d4db;
   background-image: url('../images/model-y.jpg');
-  background-size: cover;
+  background-size: contain;
   background-position: center;
 }
 .hero--cybertruck { 
   background-color: #2d2d2d;
   background-image: url('../images/cybertruck.jpg');
-  background-size: cover;
+  background-size: contain;
   background-position: center;
 }
 .hero--roadster { background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
@@ -386,7 +386,7 @@ h3 { font-size: clamp(1.25rem, 3vw, 1.75rem); }
 
 .model-hero__image {
   flex: 1;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }
