@@ -49,7 +49,7 @@ const MODELS = {
   'cybertruck': {
     name: 'Cybertruck',
     basePrice: 99990,
-    image: 'https://images.unsplash.com/photo-1704916143443-0d482af46994?w=800&q=80',
+    image: 'images/cybertruck-main.jpg',
     specs: {
       range: '340 mi',
       acceleration: '2.6s',

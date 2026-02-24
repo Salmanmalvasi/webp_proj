@@ -258,13 +258,13 @@ h3 { font-size: clamp(1.25rem, 3vw, 1.75rem); }
 .hero--model-x { background-image: url('https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-X-Main-Hero-Desktop-LHD.jpg'); }
 .hero--model-y { 
   background-color: #c7d4db;
-  background-image: url('../images/model-y.jpg');
+  background-image: url('../images/model-y-front.jpg');
   background-size: contain;
   background-position: center;
 }
 .hero--cybertruck { 
   background-color: #2d2d2d;
-  background-image: url('../images/cybertruck.jpg');
+  background-image: url('../images/cybertruck-main.jpg');
   background-size: contain;
   background-position: center;
 }
