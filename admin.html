@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tesla Clone | Admin Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css?v=11">
+  <style>
+    body { background-color: #f4f4f4; }
+    .admin-container {
+      padding: 100px 40px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+      min-height: 80vh;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    .admin-title {
+      font-size: 28px;
+      font-weight: 500;
+      color: #171a20;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border-top: 4px solid #3e6ae1;
+    }
+    .stat-card h3 {
+      font-size: 14px;
+      color: #5c5e62;
+      font-weight: 500;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .stat-card .stat-value {
+      font-size: 32px;
+      font-weight: 600;
+      color: #171a20;
+    }
+    
+    .table-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #f9f9f9;
+      font-weight: 500;
+      font-size: 13px;
+      color: #5c5e62;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      font-size: 14px;
+      color: #171a20;
+      vertical-align: middle;
+    }
+    .status-select {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #d0d1d2;
+      background: #f4f4f4;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #171a20;
+    }
+    .status-select:focus {
+      outline: none;
+      border-color: #3e6ae1;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #eee;
+      color: #333;
+    }
+    .pill.confirmed { background: #e3f2fd; color: #0277bd; }
+    .pill.production { background: #fff3e0; color: #1565c0; }
+    .pill.transit { background: #e8f5e9; color: #2e7d32; }
+    .pill.delivered { background: #dcedc8; color: #1b5e20; }
+    
+    .btn-update {
+      background: #171a20;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-update:hover { background: #333; }
+  </style>
+</head>
+<body data-page="admin">
+  <nav class="nav">
+    <a href="index.html" class="nav__logo">
+      <svg viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 .1a9.7 9.7 0 0 0 7 7h11l.5.1v27.6h6.8V7.3L26 7h11a9.8 9.8 0 0 0 7-7H0zm238.6 0h-6.8v34.8H263a9.7 9.7 0 0 0 6-6.8h-30.3V0zm-52.3 6.8c3.6-1 6.6-3.8 7.4-6.9l-38.1.1v20.6h31.1v7.2h-24.4a13.6 13.6 0 0 0-8.7 7h39.9v-21h-31.2v-7h24zm116.2 28h6.7v-14h24.6v14h6.7v-21h-38zM85.3 7h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zm0 13.8h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zm0 14.1h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zM308.5 7h26a9.6 9.6 0 0 0 7-7h-40a9.6 9.6 0 0 0 7 7z" fill="currentColor"/>
+      </svg>
+    </a>
+  </nav>
+
+  <main class="admin-container">
+    <div class="admin-header">
+      <h1 class="admin-title">Admin Control Panel</h1>
+      <div>
+        <a href="account.html" style="margin-right: 20px; font-size: 14px; font-weight:500;">Back to App</a>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Revenue</h3>
+        <div class="stat-value" id="statRevenue">$0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Total Orders</h3>
+        <div class="stat-value" id="statOrders">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Registered Users</h3>
+        <div class="stat-value" id="statUsers">0</div>
+      </div>
+    </div>
+
+    <h2 style="margin-bottom: 20px; font-size: 20px; font-weight: 500;">Global Order Registry</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total ($)</th>
+            <th>Current Status</th>
+            <th>Update Action</th>
+          </tr>
+        </thead>
+        <tbody id="adminOrdersTable">
+          <tr>
+            <td colspan="7" style="text-align:center; padding: 40px;">Fetching global orders...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

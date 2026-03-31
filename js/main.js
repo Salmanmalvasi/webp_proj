@@ -189,6 +189,37 @@ function generateId() {
 // ===== Navigation =====
 function initNavigation() {
   const nav = document.querySelector('.nav');
+  
+  // Add Account or Sign In link next to cart
+  const cartLink = document.querySelector('.nav__cart');
+  if (cartLink && !document.querySelector('.nav__auth')) {
+    const isAuth = localStorage.getItem('token');
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem('user')); } catch (e) {}
+
+    const authLinkText = isAuth ? 'Account' : 'Sign In';
+    
+    // Determine path depth
+    const inSubFolder = window.location.pathname.includes('/models/');
+    const prefix = inSubFolder ? '../' : '';
+    
+    // Admin Link?
+    if (isAuth && user && user.isAdmin) {
+      const adminLink = document.createElement('a');
+      adminLink.href = prefix + 'admin.html';
+      adminLink.className = 'nav__link';
+      adminLink.textContent = 'Admin';
+      cartLink.parentNode.insertBefore(adminLink, cartLink);
+    }
+
+    const authLink = document.createElement('a');
+    authLink.href = prefix + (isAuth ? 'account.html' : 'login.html');
+    authLink.className = 'nav__link nav__auth';
+    authLink.textContent = authLinkText;
+    
+    cartLink.parentNode.insertBefore(authLink, cartLink);
+  }
+
   const hamburger = document.querySelector('.nav__hamburger');
   const mobileMenu = document.querySelector('.mobile-menu');
   const mobileOverlay = document.querySelector('.mobile-overlay');
@@ -552,7 +583,7 @@ function renderCheckoutSummary() {
   summaryContainer.innerHTML = html;
 }
 
-function handleCheckout(e) {
+async function handleCheckout(e) {
   e.preventDefault();
   
   // Simple validation
@@ -574,25 +605,102 @@ function handleCheckout(e) {
     return;
   }
 
-  // Generate order number
-  const orderNumber = 'TLA' + Date.now().toString().slice(-8);
-  
-  // Clear cart
-  cart = [];
-  saveCart();
+  const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+  const fees = subtotal > 0 ? 1200 : 0;
+  const total = subtotal + fees;
 
-  // Redirect to confirmation
-  window.location.href = `confirmation.html?order=${orderNumber}`;
+  const orderData = {
+    customerDetails: {
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      email: formData.get('email').toLowerCase(), // normalize
+      phone: formData.get('phone'),
+      address: formData.get('address'),
+      city: formData.get('city'),
+      zipCode: formData.get('zip')
+    },
+    items: cart,
+    totalAmount: total
+  };
+
+  try {
+    const submitBtn = form.querySelector('.btn--primary');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Processing...';
+    submitBtn.disabled = true;
+
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    });
+
+    const data = await res.json();
+    
+    if (data.success) {
+      // Clear cart
+      cart = [];
+      saveCart();
+      window.location.href = `confirmation.html?order=${data.orderId}`;
+    } else {
+      showToast('Error placing order. Please try again.');
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    // Fallback if backend is not running
+    // Generate order number
+    const orderNumber = 'TLA' + Date.now().toString().slice(-8);
+    cart = [];
+    saveCart();
+    window.location.href = `confirmation.html?order=${orderNumber}`;
+  }
 }
 
 // ===== Confirmation Page =====
-function initConfirmationPage() {
+async function initConfirmationPage() {
   const params = new URLSearchParams(window.location.search);
-  const orderNumber = params.get('order') || 'TLA00000000';
+  const orderId = params.get('order') || 'TLA00000000';
   
   const orderNumberEl = document.querySelector('.confirmation-order-number');
   if (orderNumberEl) {
-    orderNumberEl.textContent = `Order Number: ${orderNumber}`;
+    orderNumberEl.textContent = `Order Number: ${orderId}`;
+  }
+
+  try {
+    if (orderId && orderId.startsWith('TLA') === false) {
+      const res = await fetch(`/api/orders/${orderId}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        const order = data.order;
+        
+        let orderDetailsHtml = `
+          <div style="margin-top: 30px; text-align: left; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+            <h3 style="margin-bottom: 15px;">Order Details</h3>
+            <p><strong>Name:</strong> ${order.customerDetails.firstName} ${order.customerDetails.lastName}</p>
+            <p><strong>Email:</strong> ${order.customerDetails.email}</p>
+            <p><strong>Address:</strong> ${order.customerDetails.address}, ${order.customerDetails.city}, ${order.customerDetails.zipCode}</p>
+            <p><strong>Total Amount:</strong> ${formatPrice(order.totalAmount)}</p>
+            <p><strong>Status:</strong> ${order.status}</p>
+            <h4 style="margin-top: 15px; margin-bottom: 10px;">Items:</h4>
+            <ul>
+              ${order.items.map(item => `<li>${item.variant} - ${item.color} - ${formatPrice(item.price)}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+        
+        const insertionPoint = document.querySelector('.confirmation-text');
+        if (insertionPoint) {
+          insertionPoint.insertAdjacentHTML('afterend', orderDetailsHtml);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching order details:', err);
   }
 }
 
@@ -661,5 +769,293 @@ document.addEventListener('DOMContentLoaded', () => {
     case 'confirmation':
       initConfirmationPage();
       break;
+    case 'login':
+      initLoginPage();
+      break;
+    case 'account':
+      initAccountPage();
+      break;
+    case 'admin':
+      initAdminPage();
+      break;
   }
 });
+
+// ===== AUTH & DASHBOARD LOGIC =====
+function initLoginPage() {
+  const form = document.getElementById('authForm');
+  const errorEl = document.getElementById('authError');
+  const switchBtn = document.getElementById('authSwitchBtn');
+  const switchText = document.getElementById('authSwitchText');
+  const title = document.getElementById('authTitle');
+  const registerFields = document.getElementById('registerFields');
+  const submitBtn = document.getElementById('authBtn');
+  
+  let isLogin = true;
+
+  if (localStorage.getItem('token')) {
+    window.location.href = 'account.html';
+  }
+
+  switchBtn.addEventListener('click', () => {
+    isLogin = !isLogin;
+    title.textContent = isLogin ? 'Sign In' : 'Create Account';
+    submitBtn.textContent = isLogin ? 'Sign In' : 'Create Account';
+    switchText.textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
+    switchBtn.textContent = isLogin ? 'Create account' : 'Sign In';
+    registerFields.style.display = isLogin ? 'none' : 'block';
+    errorEl.style.display = 'none';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.toLowerCase();
+    const password = document.getElementById('password').value;
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const payload = isLogin ? { email, password } : { email, password, firstName, lastName };
+
+    submitBtn.textContent = 'Processing...';
+    try {
+      const res = await fetch(`http://localhost:3000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = 'account.html';
+      } else {
+        errorEl.textContent = data.message;
+        errorEl.style.display = 'block';
+        submitBtn.textContent = isLogin ? 'Sign In' : 'Create Account';
+      }
+    } catch (err) {
+      errorEl.textContent = 'Network error. Make sure server is running.';
+      errorEl.style.display = 'block';
+      submitBtn.textContent = isLogin ? 'Sign In' : 'Create Account';
+    }
+  });
+}
+
+async function initAccountPage() {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+  });
+
+  try {
+    const res = await fetch(`/api/users/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const { user, orders } = data;
+    document.getElementById('userNameDisplay').textContent = `Hi, ${user.firstName || 'Driver'}`;
+    
+    const container = document.getElementById('ordersContainer');
+    
+    if (orders.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>No cars in your garage yet</h3>
+          <p>Once you place an order, you can track it here.</p>
+          <a href="index.html" class="btn btn--primary" style="margin-top:20px; display:inline-block;">Explore Vehicles</a>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = orders.map(order => {
+      // Basic logic to determine tracking bar fill based on static 'Confirmed', 'Building', 'Delivered'
+      // Since it's an immediate clone, we assume Confirmed is the default status
+      const status = order.status || 'Confirmed';
+      let progressWidth = '25%';
+      let step1='step-active', step2='', step3='', step4='';
+      
+      if (status === 'Confirmed') {
+        progressWidth = '25%'; step2='step-active'; 
+      } else if (status === 'In Production') {
+        progressWidth = '50%'; step2='step-active'; step3='step-active';
+      } else if (status === 'In Transit') {
+        progressWidth = '75%'; step2='step-active'; step3='step-active'; step4='step-active';
+      } else if (status === 'Delivered') {
+        progressWidth = '100%'; step2='step-active'; step3='step-active'; step4='step-active';
+      }
+
+      return `
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              Order Date: <strong>${new Date(order.orderDate).toLocaleDateString()}</strong>
+            </div>
+            <div>
+              Order #: <strong>${order._id.substring(0, 8).toUpperCase()}</strong>
+            </div>
+            <div>
+              Total: <strong>${formatPrice(order.totalAmount)}</strong>
+            </div>
+          </div>
+          
+          <h4 style="margin-bottom: 5px;">Delivery Tracker</h4>
+          <span style="font-size: 13px; color: #5c5e62; display:block; margin-bottom: 20px;">Current Status: <span style="color:#171a20; font-weight:500;">${status}</span></span>
+          
+          <div class="tracker-container">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${progressWidth};"></div>
+              
+              <div class="progress-step ${step1}">
+                <div class="step-circle"></div>
+                <div class="step-text">Order Placed</div>
+              </div>
+              <div class="progress-step ${step2}">
+                <div class="step-circle"></div>
+                <div class="step-text">Payment Confirmed</div>
+              </div>
+              <div class="progress-step ${step3}">
+                <div class="step-circle"></div>
+                <div class="step-text">In Production</div>
+              </div>
+              <div class="progress-step ${step4}">
+                <div class="step-circle"></div>
+                <div class="step-text">Delivered</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="order-items">
+            ${order.items.map(item => `
+              <div style="flex:1; border-right: 1px solid #eee; padding-right:15px; min-width: 150px;">
+                <p style="font-weight:500; font-size: 15px; margin-bottom:5px;">${item.variant}</p>
+                <p style="font-size: 13px; color:#5c5e62;">${item.color}</p>
+                <p style="font-size: 13px; color:#5c5e62;">${item.wheels}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    document.getElementById('ordersContainer').innerHTML = `<p style="color:red;">Error loading dashboard.</p>`;
+  }
+}
+
+// ===== ADMIN PANEL LOGIC =====
+async function initAdminPage() {
+  const token = localStorage.getItem('token');
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem('user')); } catch (e) {}
+
+  if (!token || !user || !user.isAdmin) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/admin/orders`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      alert('Failed to load admin data');
+      return;
+    }
+
+    // Update Stats
+    document.getElementById('statRevenue').textContent = formatPrice(data.totalRevenue);
+    document.getElementById('statOrders').textContent = data.orders.length;
+    document.getElementById('statUsers').textContent = data.usersCount;
+
+    // Render Table
+    const tbody = document.getElementById('adminOrdersTable');
+    if (data.orders.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders in the system yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.orders.map(order => {
+      const oDate = new Date(order.orderDate).toLocaleDateString();
+      const oId = order._id.substring(0,8).toUpperCase();
+      const statusClass = (order.status || 'Confirmed').toLowerCase().replace(' ', '-');
+      const itemsList = order.items.map(i => i.variant).join(', ');
+
+      return `
+        <tr>
+          <td><strong>${oId}</strong></td>
+          <td>${oDate}</td>
+          <td>
+            ${order.customerDetails.firstName} ${order.customerDetails.lastName}<br>
+            <small style="color:#5c5e62">${order.customerDetails.email}</small>
+          </td>
+          <td>${itemsList}</td>
+          <td><strong>${formatPrice(order.totalAmount)}</strong></td>
+          <td>
+            <span class="pill ${statusClass}" id="pill-${order._id}">${order.status || 'Confirmed'}</span>
+          </td>
+          <td>
+            <select class="status-select" id="select-${order._id}" style="margin-right:8px;">
+              <option value="Confirmed" ${(order.status==='Confirmed')?'selected':''}>Confirmed</option>
+              <option value="In Production" ${(order.status==='In Production')?'selected':''}>In Production</option>
+              <option value="In Transit" ${(order.status==='In Transit')?'selected':''}>In Transit</option>
+              <option value="Delivered" ${(order.status==='Delivered')?'selected':''}>Delivered</option>
+            </select>
+            <button class="btn-update" onclick="updateOrderStatus('${order._id}')">Update</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    document.getElementById('adminOrdersTable').innerHTML = `<tr><td colspan="7" style="color:red;">Error loading orders</td></tr>`;
+  }
+}
+
+window.updateOrderStatus = async function(orderId) {
+  const select = document.getElementById(`select-${orderId}`);
+  const newStatus = select.value;
+  const token = localStorage.getItem('token');
+  
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      showToast('Order status updated!');
+      const pill = document.getElementById(`pill-${orderId}`);
+      pill.textContent = newStatus;
+      pill.className = `pill ${newStatus.toLowerCase().replace(' ', '-')}`;
+    } else {
+      showToast('Failed to update status');
+    }
+  } catch(err) {
+    showToast('Network error');
+  }
+};

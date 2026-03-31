@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tesla clone | Account</title>
+  <link rel="stylesheet" href="css/styles.css?v=10">
+  <style>
+    .auth-container {
+      padding-top: 100px;
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f4f4;
+    }
+    .auth-box {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .auth-title {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      color: #171a20;
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .auth-input {
+      padding: 12px 15px;
+      border: 1px solid #d0d1d2;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 100%;
+      background-color: #f4f4f4;
+      transition: border 0.3s;
+    }
+    .auth-input:focus {
+      border-color: #3e6ae1;
+      outline: none;
+      background-color: white;
+    }
+    .auth-btn {
+      background-color: #3e6ae1;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    .auth-btn:hover {
+      background-color: #3457b1;
+    }
+    .auth-switch {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #5c5e62;
+    }
+    .auth-switch a {
+      color: #3e6ae1;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .register-fields {
+      display: none;
+    }
+    .error-msg {
+      color: #e82127;
+      font-size: 13px;
+      margin-bottom: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body data-page="login">
+  <nav class="nav">
+    <a href="index.html" class="nav__logo">
+      <svg viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 .1a9.7 9.7 0 0 0 7 7h11l.5.1v27.6h6.8V7.3L26 7h11a9.8 9.8 0 0 0 7-7H0zm238.6 0h-6.8v34.8H263a9.7 9.7 0 0 0 6-6.8h-30.3V0zm-52.3 6.8c3.6-1 6.6-3.8 7.4-6.9l-38.1.1v20.6h31.1v7.2h-24.4a13.6 13.6 0 0 0-8.7 7h39.9v-21h-31.2v-7h24zm116.2 28h6.7v-14h24.6v14h6.7v-21h-38zM85.3 7h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zm0 13.8h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zm0 14.1h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zM308.5 7h26a9.6 9.6 0 0 0 7-7h-40a9.6 9.6 0 0 0 7 7z" fill="currentColor"/>
+      </svg>
+    </a>
+  </nav>
+
+  <main class="auth-container">
+    <div class="auth-box">
+      <h2 class="auth-title" id="authTitle">Sign In</h2>
+      <div id="authError" class="error-msg"></div>
+      
+      <form id="authForm" class="auth-form">
+        <div class="register-fields" id="registerFields">
+          <input type="text" id="firstName" class="auth-input" placeholder="First Name">
+          <input type="text" id="lastName" class="auth-input" placeholder="Last Name">
+        </div>
+        <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
+        <input type="password" id="password" class="auth-input" placeholder="Password" required>
+        
+        <button type="submit" id="authBtn" class="auth-btn">Sign In</button>
+      </form>
+      
+      <div class="auth-switch">
+        <span id="authSwitchText">Don't have an account?</span> 
+        <a id="authSwitchBtn">Create account</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
