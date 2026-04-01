@@ -6,6 +6,7 @@ const MODELS = {
     name: 'Model S',
     basePrice: 74990,
     image: 'https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-S-Main-Hero-Desktop-LHD.jpg',
+    stock: 12,
     specs: {
       range: '405 mi',
       acceleration: '1.99s',
@@ -17,6 +18,7 @@ const MODELS = {
     name: 'Model 3',
     basePrice: 40240,
     image: 'https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-3-Main-Hero-Desktop-LHD.jpg',
+    stock: 45,
     specs: {
       range: '333 mi',
       acceleration: '3.1s',
@@ -28,6 +30,7 @@ const MODELS = {
     name: 'Model X',
     basePrice: 79990,
     image: 'https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-X-Main-Hero-Desktop-LHD.jpg',
+    stock: 8,
     specs: {
       range: '348 mi',
       acceleration: '2.5s',
@@ -39,6 +42,7 @@ const MODELS = {
     name: 'Model Y',
     basePrice: 44990,
     image: 'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80',
+    stock: 32,
     specs: {
       range: '330 mi',
       acceleration: '3.5s',
@@ -50,6 +54,7 @@ const MODELS = {
     name: 'Cybertruck',
     basePrice: 99990,
     image: 'images/cybertruck-main.jpg',
+    stock: 3,
     specs: {
       range: '340 mi',
       acceleration: '2.6s',
@@ -300,6 +305,15 @@ function initConfigPage() {
   renderConfigOptions(modelId, config);
   updateConfigPreview(config);
   updateConfigPrice(config);
+  
+  // Show stock info
+  const stockEl = document.createElement('div');
+  stockEl.style.cssText = "margin-top: 15px; font-size: 14px; font-weight: 500; color: #5c5e62; background: #e8f5e9; padding: 8px 12px; border-radius: 6px; display: inline-block;";
+  stockEl.innerHTML = `⚡ ${model.stock} pieces available in inventory`;
+  const summaryDiv = document.querySelector('.config-summary');
+  if (summaryDiv) {
+    summaryDiv.insertBefore(stockEl, summaryDiv.querySelector('.config-add-cart'));
+  }
 
   // Event listeners for option selection
   document.querySelectorAll('.option-card').forEach(card => {
@@ -997,10 +1011,28 @@ async function initAdminPage() {
       return;
     }
 
-    // Update Stats
+    // Render Stats
     document.getElementById('statRevenue').textContent = formatPrice(data.totalRevenue);
     document.getElementById('statOrders').textContent = data.orders.length;
     document.getElementById('statUsers').textContent = data.usersCount;
+
+    // Render Inventory
+    const invBody = document.getElementById('adminInventoryTable');
+    if (invBody) {
+      invBody.innerHTML = Object.keys(MODELS).map(key => {
+        const car = MODELS[key];
+        const stockStatus = car.stock > 5 ? '<strong style="color:#2e7d32;">' + car.stock + ' pieces</strong>' : '<strong style="color:#c62828;">' + car.stock + ' left</strong>';
+        return `
+          <tr>
+            <td><strong>${car.name}</strong></td>
+            <td>${formatPrice(car.basePrice)}</td>
+            <td>${car.specs.range}</td>
+            <td>${car.specs.acceleration}</td>
+            <td>${stockStatus}</td>
+          </tr>
+        `;
+      }).join('');
+    }
 
     // Render Table
     const tbody = document.getElementById('adminOrdersTable');
