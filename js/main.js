@@ -537,13 +537,16 @@ function removeFromCart(id) {
 function updateCartSummary() {
   const subtotalEl = document.querySelector('[data-summary="subtotal"]');
   const totalEl = document.querySelector('[data-summary="total"]');
+  const dueTodayEl = document.querySelector('[data-summary="due-today"]');
 
   const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
   const fees = subtotal > 0 ? 1200 : 0; // Destination & documentation fee
   const total = subtotal + fees;
+  const dueToday = total * 0.10;
 
   if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
   if (totalEl) totalEl.textContent = formatPrice(total);
+  if (dueTodayEl) dueTodayEl.textContent = formatPrice(dueToday);
 }
 
 // Make removeFromCart globally available
@@ -606,8 +609,12 @@ function renderCheckoutSummary() {
 
   html += `
     <div class="checkout-order-item">
-      <span>Total</span>
+      <span>Total Vehicle Price</span>
       <span>${formatPrice(total)}</span>
+    </div>
+    <div class="checkout-order-item" style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 10px; color: #3e6ae1; font-weight: 600;">
+      <span>Due Today (10% Booking Fee)</span>
+      <span>${formatPrice(total * 0.10)}</span>
     </div>
   `;
 
@@ -653,6 +660,15 @@ async function handleCheckout(e) {
     items: cart,
     totalAmount: total
   };
+
+  // Handle deposit booking option (10%)
+  const depositBooking = document.getElementById('depositBooking');
+  if (depositBooking && depositBooking.checked) {
+    const depositAmount = Math.round(total * 0.10); // 10% deposit, rounded
+    orderData.depositAmount = depositAmount;
+    orderData.depositPaid = true; // simulate charging deposit now
+    // mark status will be set on server to Reserved when depositPaid is true
+  }
 
   try {
     const submitBtn = form.querySelector('.btn--primary');
@@ -728,6 +744,17 @@ async function initConfirmationPage() {
         if (insertionPoint) {
           insertionPoint.insertAdjacentHTML('afterend', orderDetailsHtml);
         }
+        // Populate deposit/payment info area (if present)
+        try {
+          const paymentEl = document.getElementById('confirmationPaymentInfo');
+          if (paymentEl) {
+            if (order.depositPaid) {
+              paymentEl.innerHTML = `<strong>Deposit paid:</strong> ${formatPrice(order.depositAmount || 0)} — Remaining ${formatPrice(order.totalAmount - (order.depositAmount || 0))} to be paid at dealer.`;
+            } else {
+              paymentEl.innerHTML = `<strong>Payment:</strong> Full amount ${formatPrice(order.totalAmount)} was recorded.`;
+            }
+          }
+        } catch (e) { /* ignore */ }
       }
     }
   } catch (err) {

@@ -32,6 +32,9 @@ const orderSchema = new mongoose.Schema({
   },
   items: Array,
   totalAmount: Number,
+  // Deposit booking support
+  depositAmount: { type: Number, default: 0 },
+  depositPaid: { type: Boolean, default: false },
   orderDate: { type: Date, default: Date.now },
   status: { type: String, default: 'Confirmed' }
 });
@@ -210,7 +213,13 @@ app.put('/api/admin/inventory/:modelId', authenticateToken, authenticateAdmin, a
 // Create a new order
 app.post('/api/orders', async (req, res) => {
   try {
-    const newOrder = new Order(req.body);
+    // Support deposit booking: if depositPaid is true and depositAmount provided,
+    // set initial status to 'Reserved' to indicate booking rather than full purchase.
+    const body = req.body || {};
+    if (body.depositPaid) {
+      body.status = 'Reserved';
+    }
+    const newOrder = new Order(body);
     const savedOrder = await newOrder.save();
     res.status(201).json({ success: true, orderId: savedOrder._id });
   } catch (error) {
