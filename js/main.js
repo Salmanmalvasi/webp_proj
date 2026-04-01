@@ -539,6 +539,23 @@ window.removeFromCart = removeFromCart;
 function initCheckoutPage() {
   renderCheckoutSummary();
   
+  // Pre-fill user data if logged in
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const emailInput = document.getElementById('email');
+      const fnameInput = document.getElementById('firstName');
+      const lnameInput = document.getElementById('lastName');
+      
+      if (emailInput && user.email) emailInput.value = user.email;
+      if (fnameInput && user.firstName) fnameInput.value = user.firstName;
+      if (lnameInput && user.lastName) lnameInput.value = user.lastName;
+    }
+  } catch (e) {
+    console.error('Error parsing user data', e);
+  }
+  
   const form = document.querySelector('.checkout-form');
   if (form) {
     form.addEventListener('submit', handleCheckout);
