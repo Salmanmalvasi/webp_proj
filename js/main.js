@@ -1013,18 +1013,23 @@ async function initAdminPage() {
       const oDate = new Date(order.orderDate).toLocaleDateString();
       const oId = order._id.substring(0,8).toUpperCase();
       const statusClass = (order.status || 'Confirmed').toLowerCase().replace(' ', '-');
-      const itemsList = order.items.map(i => i.variant).join(', ');
+      
+      const itemsList = (order.items || []).map(i => i.variant).join(', ') || 'No Items';
+      const cDetails = order.customerDetails || {};
+      const fName = cDetails.firstName || 'Unknown';
+      const lName = cDetails.lastName || '';
+      const email = cDetails.email || 'N/A';
 
       return `
         <tr>
           <td><strong>${oId}</strong></td>
           <td>${oDate}</td>
           <td>
-            ${order.customerDetails.firstName} ${order.customerDetails.lastName}<br>
-            <small style="color:#5c5e62">${order.customerDetails.email}</small>
+            ${fName} ${lName}<br>
+            <small style="color:#5c5e62">${email}</small>
           </td>
           <td>${itemsList}</td>
-          <td><strong>${formatPrice(order.totalAmount)}</strong></td>
+          <td><strong>${formatPrice(order.totalAmount || 0)}</strong></td>
           <td>
             <span class="pill ${statusClass}" id="pill-${order._id}">${order.status || 'Confirmed'}</span>
           </td>
