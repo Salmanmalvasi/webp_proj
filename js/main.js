@@ -1000,6 +1000,19 @@ async function initAdminPage() {
     return;
   }
 
+  // Fetch external inventory
+  try {
+    const invRes = await fetch('/api/inventory');
+    const invData = await invRes.json();
+    if (invData.success && invData.inventory) {
+      invData.inventory.forEach(item => {
+        if(MODELS[item.modelId]) {
+          MODELS[item.modelId].stock = item.stock;
+        }
+      });
+    }
+  } catch(e) { console.warn('Inventory fetch failed');}
+
   try {
     const res = await fetch(`/api/admin/orders`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -1028,7 +1041,11 @@ async function initAdminPage() {
             <td>${formatPrice(car.basePrice)}</td>
             <td>${car.specs.range}</td>
             <td>${car.specs.acceleration}</td>
-            <td>${stockStatus}</td>
+            <td style="display:flex; align-items:center; gap:10px;">
+              ${stockStatus}
+              <input type="number" id="stock-${key}" value="${car.stock}" style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" min="0">
+              <button class="btn-update" onclick="updateStock('${key}')" style="padding: 4px 8px; font-size: 11px;">Update DB</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -1073,6 +1090,7 @@ async function initAdminPage() {
               <option value="Delivered" ${(order.status==='Delivered')?'selected':''}>Delivered</option>
             </select>
             <button class="btn-update" onclick="updateOrderStatus('${order._id}')">Update</button>
+            <button class="btn-update" onclick="deleteOrder('${order._id}')" style="background:#e82127; margin-left: 5px;">Delete</button>
           </td>
         </tr>
       `;
@@ -1111,5 +1129,54 @@ window.updateOrderStatus = async function(orderId) {
     }
   } catch(err) {
     showToast('Network error');
+  }
+};
+
+window.deleteOrder = async function(orderId) {
+  if (!confirm('Are you sure you want to completely delete this order?')) return;
+
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      showToast('Order deleted securely.');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showToast('Failed to delete order.');
+    }
+  } catch(err) {
+    showToast('Network error on delete.');
+  }
+};
+
+window.updateStock = async function(modelId) {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  const inputEl = document.getElementById(`stock-${modelId}`);
+  if(!inputEl) return;
+  
+  try {
+    const res = await fetch(`/api/admin/inventory/${modelId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ stock: parseInt(inputEl.value) })
+    });
+    const data = await res.json();
+    if(data.success) {
+      showToast(`${MODELS[modelId].name} stock sync updated!`);
+      setTimeout(() => window.location.reload(), 1000);
+    } else { showToast('Stock update failed.'); }
+  } catch (err) {
+    showToast('Network error trying to update stock.');
   }
 };

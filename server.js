@@ -164,6 +164,48 @@ app.put('/api/admin/orders/:id/status', authenticateToken, authenticateAdmin, as
   }
 });
 
+app.delete('/api/admin/orders/:id', authenticateToken, authenticateAdmin, async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    res.json({ success: true, message: 'Order deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Inventory override schema
+const inventorySchema = new mongoose.Schema({
+  modelId: String,
+  stock: Number
+});
+const Inventory = mongoose.model('Inventory', inventorySchema);
+
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const items = await Inventory.find();
+    res.json({ success: true, inventory: items });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+app.put('/api/admin/inventory/:modelId', authenticateToken, authenticateAdmin, async (req, res) => {
+  try {
+    const { stock } = req.body;
+    let item = await Inventory.findOne({ modelId: req.params.modelId });
+    if (!item) {
+      item = new Inventory({ modelId: req.params.modelId, stock });
+    } else {
+      item.stock = stock;
+    }
+    await item.save();
+    res.json({ success: true, item });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // API Endpoints
 // Create a new order
 app.post('/api/orders', async (req, res) => {
